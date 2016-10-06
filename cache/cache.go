@@ -15,7 +15,12 @@ import (
 
 type SlowRetrieve func(ctx context.Context) (interface{}, error)
 
-func Remember(ctx context.Context, key string, expiration time.Duration, p SlowRetrieve) (interface{}, error) {
+func Remember(ctx context.Context, key string, expiration time.Duration, p SlowRetrieve, disable ...bool) (interface{}, error) {
+
+	//For debugging, you can disable cache
+	if len(disable) != 0 && disable[0] == true {
+		return p(ctx)
+	}
 
 	//Check if item exists
 	var v interface{}
