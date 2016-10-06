@@ -13,7 +13,7 @@ import (
 //http://www.funcmain.com/gob_encoding_an_interface
 //http://stackoverflow.com/questions/13264555/store-an-object-in-memcache-of-gae-in-go
 
-type SlowRetrieve func() (interface{}, error)
+type SlowRetrieve func(ctx context.Context) (interface{}, error)
 
 func Remember(ctx context.Context, key string, expiration time.Duration, p SlowRetrieve) (interface{}, error) {
 
@@ -32,7 +32,7 @@ func Remember(ctx context.Context, key string, expiration time.Duration, p SlowR
 	}
 
 	//Item does not exist in cache so grab it from the persistent store
-	itemToStore, err := p()
+	itemToStore, err := p(ctx)
 	func(itemToStore interface{}) {
 		defer func() {
 			recover()
@@ -63,4 +63,8 @@ func Remember(ctx context.Context, key string, expiration time.Duration, p SlowR
 //Delete key from memcache
 func Delete(ctx context.Context, key string) error {
 	return memcache.Delete(ctx, key)
+}
+
+func DeleteMulti(ctx context.Context, key []string) error {
+	return memcache.DeleteMulti(ctx, key)
 }

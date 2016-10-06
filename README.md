@@ -31,19 +31,14 @@ type FetchModel struct {
 }
 
 
-slowFetchUpcomingEvent := func() (interface{}, error) {
+slowFetchUpcomingEvent := func(ctx context.Context) (interface{}, error) {
     gorm, _ := g.Open("mysql", "XXX")
 
     serverUTCTimeString := time.Now().UTC().Format("2006-01-02 15:04:05")
 		
     sql_stmt :=
 			" SELECT event_id, time_start, registered_time" +
-				" FROM " + c.PIVOT_CUSTOMER_EVENT +
-				" INNER JOIN " + c.TEVENT +
-				" ON " + c.EVENT + ".id = " + c.PIVOT_CUSTOMER_EVENT + ".event_id" +
-				" WHERE " + c.PIVOT_CUSTOMER_EVENT + ".customer_id = ?" +
-				" AND " + c.EVENT + fmt.Sprintf(".time_end > '%s'", serverUTCTimeString) +
-				" AND " + c.EVENT + ".cancelled = ?" +
+				" FROM `MY_TABLE_NAME`" +
 				" ORDER BY time_start" +
 				" LIMIT 1"
 
