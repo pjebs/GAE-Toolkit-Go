@@ -70,6 +70,6 @@ func Delete(ctx context.Context, key string) error {
 	return memcache.Delete(ctx, key)
 }
 
-func DeleteMulti(ctx context.Context, key []string) error {
-	return memcache.DeleteMulti(ctx, key)
+func DeleteMulti(ctx context.Context, keys []string) error {
+	return memcache.DeleteMulti(ctx, keys)
 }
