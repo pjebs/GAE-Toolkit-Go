@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"google.golang.org/appengine"
 	"google.golang.org/appengine/socket"
-	"log"
+	// "log"
 	"net"
 	"net/http"
 	"sync"
@@ -29,7 +29,6 @@ func Dial(req *http.Request, setMaxOpenConns int) func(addr string) (net.Conn, e
 	if setMaxOpenConns <= 0 {
 		panic("setMaxOpenConns > 0 required")
 	}
-	log.Println("got here first")
 	maxOpenConns = setMaxOpenConns
 	return func(addr string) (net.Conn, error) {
 		// log.Println("\x1b[36mDial", addr, "\x1b[39;49m")
@@ -132,7 +131,6 @@ func Open(driverName, dataSourceName string, req ...*http.Request) (*DB, error) 
 	ctx := appengine.NewContext(req[0])
 
 	poolInit.Do(func() {
-		log.Println("got here second", maxOpenConns)
 		pool, _ = connPool.NewChannelPool(0, maxOpenConns, factory)
 	})
 
