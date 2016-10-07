@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"google.golang.org/appengine"
 	"google.golang.org/appengine/socket"
-	"log"
+	// "log"
 	"net"
 	"net/http"
 	"sync"
@@ -28,7 +28,7 @@ var maxOpenConns int = 10
 func Dial(req *http.Request, setMaxOpenConns int) func(addr string) (net.Conn, error) {
 	maxOpenConns = setMaxOpenConns
 	return func(addr string) (net.Conn, error) {
-		log.Println("\x1b[36mDial", addr, "\x1b[39;49m")
+		// log.Println("\x1b[36mDial", addr, "\x1b[39;49m")
 		ctx := appengine.NewContext(req)
 		var err error
 		tempConn, err = socket.Dial(ctx, "tcp", addr)
@@ -60,7 +60,7 @@ func (db *DB) SetMaxOpenConns(n int) {
 //Closes connection if `database/sql`'s native connection pooling is used.
 //Otherwise puts the connection back into pool
 func (db *DB) Close() error {
-	log.Println("Close Before")
+
 	if db.Conn == nil {
 		return db.DB.Close()
 	}
@@ -73,8 +73,6 @@ func (db *DB) Close() error {
 	// temp := db.PoolConn
 	// db.PoolConn = nil //Break Retain Cycle
 	// temp.Close()
-
-	log.Println("Close After")
 
 	return nil
 }
