@@ -106,24 +106,23 @@ func Open(driverName, dataSourceName string, req ...*http.Request) (*DB, error) 
 
 	factory := func() (net.Conn, error) {
 		connLock.Lock()
-		defer connLock.Unlock()
-		_db, err := sql.Open(driverName, dataSourceName)
-		if err != nil {
+		defer func() {
 			tempConn = nil
 			connLock.Unlock()
+		}()
+
+		_db, err := sql.Open(driverName, dataSourceName)
+		if err != nil {
 			return nil, err
 		}
 		_db.SetMaxOpenConns(1)
 		_db.SetMaxIdleConns(1)
 		err = _db.Ping() //Force an actual connection to be created
 		if err != nil {
-			tempConn = nil
 			return nil, err
 		}
 
 		db := &DB{_db, tempConn, nil}
-
-		tempConn = nil
 
 		return db, nil
 	}
