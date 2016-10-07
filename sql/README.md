@@ -8,6 +8,8 @@ Unfortunately, socket API can't be easily used with connection pooling using the
 
 This is an attempt to do the connection pooling outside of database/sql.
 
+If you think this codebase is helpful, give it a **star**. If I get many stars, it'll indicate to me that there is demand for this project. I'll be more likely to polish it up. It's hard to estimate if there is actually latent demand for escaping CloudSQL amongst GAE-Go users due to how difficult it is to actually escape.
+
 
 **HOW TO USE SQL PACKAGE**
 
