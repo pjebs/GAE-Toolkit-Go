@@ -1,12 +1,12 @@
 **INTRODUCTION**
 
-This package is a experimental package designed to allow Google App Engine (Standard Environment) to use an non-cloud sql database hosted elsewhere.
+This package is an experimental package designed to allow Google App Engine (Standard Environment) to use an non-cloudSQL database hosted elsewhere.
 
-They key is to use Socket API. It is trivial to connect to an external database without connection pooling. That is not recommended because it involves making a connection to the database and and then closing it for every request cycle.
+The key is to use Socket API. It is trivial to connect to an external database without connection pooling. That is not recommended because it involves making a connection to the database and and then closing it for every request cycle.
 
-Unfortunately, socket API can't be used with connection pooling using the database/sql + go-sql-driver/mysql package combination (the driver requires heavy modifications).
+Unfortunately, socket API can't be easily used with connection pooling using the `database/sql` + `go-sql-driver/mysql` package combination (the driver requires heavy modifications).
 
-This is an attempt to do the connection pooling outside if database/sql.
+This is an attempt to do the connection pooling outside of database/sql.
 
 
 **HOW TO USE SQL PACKAGE**
@@ -22,17 +22,19 @@ import (
 
 Firstly:
 
-At the start of the request cycle (you can create a middleware) add this:
+At the start of the request cycle add this (you can create a middleware at top of stack to make it easier):
 
 ```
-ctx := appengine.NewContext(req)
 //NB: "external" in the RegisterDial() and sql.Open()
-mysql.RegisterDial("external", exSql.Dial(req, 10)) //sql.Open("mysql", "username:password@external(your-amazonaws-uri.com:3306)/dbname")
+//sql.Open("mysql", "username:password@external(your-amazonaws-uri.com:3306)/dbname")
+
+ctx := appengine.NewContext(req)
+mysql.RegisterDial("external", exSql.Dial(req, 10))
 ```
 
 Secondly:
 
-Perform a request:
+Create a Request Handler:
 
 ```
 import (
@@ -92,9 +94,9 @@ This library 'mostly' works. There are many issues which I don't have time to so
 If you can solve it, let me know.
 
 The code is purely a 'quick-and-dirty' proof of concept.
-I attempted to make the api consistent with also using cloudsql. Hence the interface is not designed as well as it could be. (If you leave out the `req` in the open function, your cloudsql code should work perfectly as before.)
+I attempted to make the api consistent with also using cloudSQL. Hence the interface is not designed as well as it could be. (If you leave out the `req` in the `Open` function, your cloudsql code should work perfectly as before.)
 
-Obviously this library should not have to worry about cloudsql compatibility in the final version.
+Obviously this library should not have to worry about cloudSQL compatibility in the final version.
 
 There appears to be issues with the mutex locks and the connection pooling library used: `"gopkg.in/fatih/pool.v2"`.
 
