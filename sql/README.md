@@ -11,7 +11,7 @@ This is an attempt to do the connection pooling outside of database/sql.
 
 **HOW TO USE SQL PACKAGE**
 
-I will assume you are using the `o-sql-driver/mysql` driver.
+I will assume you are using the `go-sql-driver/mysql` driver.
 
 ```
 import (
@@ -100,7 +100,7 @@ Obviously this library should not have to worry about cloudSQL compatibility in 
 
 There appears to be issues with the mutex locks and the connection pooling library used: `"gopkg.in/fatih/pool.v2"`.
 
-I think the better approach may be to use something like this: (Redis library's pool)[https://godoc.org/github.com/garyburd/redigo/redis#Pool]
+I think the better approach may be to use something like this: [Redis library's pool](https://godoc.org/github.com/garyburd/redigo/redis#Pool)
 
 
 **CONTACT**

@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"google.golang.org/appengine"
 	"google.golang.org/appengine/socket"
-	// "log"
+	"log"
 	"net"
 	"net/http"
 	"sync"
@@ -16,8 +16,8 @@ import (
 var tempConn *socket.Conn
 var connLock *sync.Mutex = &sync.Mutex{}
 
+var poolInit sync.Once
 var pool connPool.Pool
-var poolLock *sync.RWMutex = &sync.RWMutex{}
 
 //Maximum of 12 connections to a cloudsql connection according to: https://cloud.google.com/sql/faq#sizeqps
 //Presumeably 10 is a good number for an external database
@@ -26,6 +26,10 @@ var maxOpenConns int = 10
 //Register with driver at start of request cycle
 //eg. mysql.RegisterDial("external", sql.Dial(req, 10)), where sql is this package
 func Dial(req *http.Request, setMaxOpenConns int) func(addr string) (net.Conn, error) {
+	if setMaxOpenConns <= 0 {
+		panic("setMaxOpenConns > 0 required")
+	}
+	log.Println("got here first")
 	maxOpenConns = setMaxOpenConns
 	return func(addr string) (net.Conn, error) {
 		// log.Println("\x1b[36mDial", addr, "\x1b[39;49m")
@@ -86,11 +90,7 @@ func (db *DB) Destroy() error {
 	//At the moment, this doesn't destroy retain cycle by closing all connections.
 	//I may need to fork pool library.
 
-	poolLock.Lock()
-	defer poolLock.Unlock()
-	if pool != nil {
-		pool.Close()
-	}
+	pool.Close()
 
 	return nil
 }
@@ -131,74 +131,35 @@ func Open(driverName, dataSourceName string, req ...*http.Request) (*DB, error) 
 
 	ctx := appengine.NewContext(req[0])
 
-	poolLock.RLock()
-	if pool == nil {
-		poolLock.RUnlock()
-		poolLock.Lock()
-		defer poolLock.Unlock()
+	poolInit.Do(func() {
+		log.Println("got here second", maxOpenConns)
+		pool, _ = connPool.NewChannelPool(0, maxOpenConns, factory)
+	})
 
-		//Perform second test in case another goroutine creates the pool in between `poolLock.RUnlock()` and `poolLock.Lock()`
-		if pool == nil {
-			//Create a new pool
-			p, err := connPool.NewChannelPool(1, maxOpenConns, factory)
-			if err != nil {
-				return nil, err
-			}
-			pool = p
-		}
-
-		//Use current pool
-		conn, err := pool.Get()
-		if err != nil {
-			return nil, err
-		}
-
-		//Test the connection
-		err = conn.(*connPool.PoolConn).Conn.(*DB).DB.Ping()
-		if err != nil {
-			if conn.(*connPool.PoolConn).Conn.(*DB).PoolConn != nil {
-				conn.(*connPool.PoolConn).Conn.(*DB).PoolConn = nil
-			}
-			conn.(*connPool.PoolConn).Conn.(*DB).Close()
-			conn.(*connPool.PoolConn).Conn.(*DB).Conn.Close()
-			conn.(*connPool.PoolConn).MarkUnusable()
-			return nil, err
-		}
-
-		// log.Println("Active Connections:", pool.Len())
-
-		conn.(*connPool.PoolConn).Conn.(*DB).Conn.SetContext(ctx)
-
-		//WARNING: RETAIN CYCLES
-		conn.(*connPool.PoolConn).Conn.(*DB).PoolConn = conn.(*connPool.PoolConn)
-		return conn.(*connPool.PoolConn).Conn.(*DB), nil
-	} else {
-		defer poolLock.RUnlock()
-
-		//Use current pool
-		conn, err := pool.Get()
-		if err != nil {
-			return nil, err
-		}
-
-		//Test the connection
-		err = conn.(*connPool.PoolConn).Conn.(*DB).DB.Ping()
-		if err != nil {
-			if conn.(*connPool.PoolConn).Conn.(*DB).PoolConn != nil {
-				conn.(*connPool.PoolConn).Conn.(*DB).PoolConn = nil
-			}
-			conn.(*connPool.PoolConn).Conn.(*DB).Close()
-			conn.(*connPool.PoolConn).Conn.(*DB).Conn.Close()
-			conn.(*connPool.PoolConn).MarkUnusable()
-			return nil, err
-		}
-
-		// log.Println("Active Connections:", pool.Len())
-
-		conn.(*connPool.PoolConn).Conn.(*DB).Conn.SetContext(ctx)
-
-		//WARNING: RETAIN CYCLES
-		conn.(*connPool.PoolConn).Conn.(*DB).PoolConn = conn.(*connPool.PoolConn)
-		return conn.(*connPool.PoolConn).Conn.(*DB), nil
+	//Use current pool
+	conn, err := pool.Get()
+	if err != nil {
+		return nil, err
 	}
+
+	//Test the connection
+	err = conn.(*connPool.PoolConn).Conn.(*DB).DB.Ping()
+	if err != nil {
+		if conn.(*connPool.PoolConn).Conn.(*DB).PoolConn != nil {
+			conn.(*connPool.PoolConn).Conn.(*DB).PoolConn = nil
+		}
+		conn.(*connPool.PoolConn).Conn.(*DB).Close()
+		conn.(*connPool.PoolConn).Conn.(*DB).Conn.Close()
+		conn.(*connPool.PoolConn).MarkUnusable()
+		return nil, err
+	}
+
+	// log.Println("Active Connections:", pool.Len())
+
+	conn.(*connPool.PoolConn).Conn.(*DB).Conn.SetContext(ctx)
+
+	//WARNING: RETAIN CYCLES
+	conn.(*connPool.PoolConn).Conn.(*DB).PoolConn = conn.(*connPool.PoolConn)
+	return conn.(*connPool.PoolConn).Conn.(*DB), nil
+
 }
