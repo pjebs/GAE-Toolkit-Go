@@ -43,6 +43,16 @@ func Dial(req *http.Request, setMaxOpenConns ...int) func(addr string) (net.Conn
 	}
 }
 
+//This may be the key to ensuring that Close() actually returns connection back to pool.
+type sqlBase interface {
+	Begin() (*sql.Tx, error)
+	Exec(query string, args ...interface{}) (sql.Result, error)
+	Prepare(query string) (*sql.Stmt, error)
+	Query(query string, args ...interface{}) (*sql.Rows, error)
+	QueryRow(query string, args ...interface{}) *sql.Row
+	Close() error
+}
+
 type DB struct {
 	*sql.DB
 	*socket.Conn
@@ -159,5 +169,4 @@ func Open(driverName, dataSourceName string, req ...*http.Request) (*DB, error) 
 	//WARNING: RETAIN CYCLES
 	conn.(*connPool.PoolConn).Conn.(*DB).PoolConn = conn.(*connPool.PoolConn)
 	return conn.(*connPool.PoolConn).Conn.(*DB), nil
-
 }
