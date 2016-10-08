@@ -56,7 +56,7 @@ func Test(w http.ResponseWriter, req *http.Request) {
 
 		go func(i int) {
 			defer wg.Done()
-			db, err := exSql.Open("mysql", username:password@external(your-amazonaws-uri.com:3306)/dbname", req)
+			db, err := exSql.Open("mysql", "username:password@external(your-amazonaws-uri.com:3306)/dbname", req)
 			log.Println("Opened Database:", i)
 			if err != nil {
 				log.Println("Open error:", err)
@@ -71,7 +71,7 @@ func Test(w http.ResponseWriter, req *http.Request) {
 			switch {
 			case err == sql.ErrNoRows:
 				log.Printf("No user with that ID.")
-				fmt.Fprintln(w, "Open error:", err)
+				fmt.Fprintln(w, ""No user with that ID.")
 			case err != nil:
 				log.Println("error:", err)
 				fmt.Fprintln(w, "error:", err)
@@ -92,11 +92,11 @@ func Test(w http.ResponseWriter, req *http.Request) {
 
 **ISSUES**
 
-This library 'mostly' works. There are many issues which I don't have time to solve.
+This library seems to work 'okay'. There are some issues which I don't have time to solve.
 If you can solve it, let me know.
 
 The code is purely a 'quick-and-dirty' proof of concept.
-I attempted to make the api consistent with also using cloudSQL. Hence the interface is not designed as well as it could be. (If you leave out the `req` in the `Open` function, your cloudsql code should work perfectly as before.)
+I attempted to make the api consistent with also using cloudSQL. It works as a **drop-in-replacement**. Hence the interface is not designed as well as it could be. (If you leave out the `req` in the `Open` function, your previous cloudsql code should work perfectly as before.)
 
 Obviously this library should not have to worry about cloudSQL compatibility in the final version.
 

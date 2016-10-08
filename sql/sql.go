@@ -20,16 +20,20 @@ var poolInit sync.Once
 var pool connPool.Pool
 
 //Maximum of 12 connections to a cloudsql connection according to: https://cloud.google.com/sql/faq#sizeqps
-//Presumeably 10 is a good number for an external database
+//Presumeably 10 is a good default number for an external database
 var maxOpenConns int = 10
 
 //Register with driver at start of request cycle
 //eg. mysql.RegisterDial("external", sql.Dial(req, 10)), where sql is this package
-func Dial(req *http.Request, setMaxOpenConns int) func(addr string) (net.Conn, error) {
-	if setMaxOpenConns <= 0 {
-		panic("setMaxOpenConns > 0 required")
+func Dial(req *http.Request, setMaxOpenConns ...int) func(addr string) (net.Conn, error) {
+	if len(setMaxOpenConns) != 0 {
+		if setMaxOpenConns[0] <= 0 {
+			panic("setMaxOpenConns > 0 required")
+		} else {
+			maxOpenConns = setMaxOpenConns[0]
+		}
 	}
-	maxOpenConns = setMaxOpenConns
+
 	return func(addr string) (net.Conn, error) {
 		// log.Println("\x1b[36mDial", addr, "\x1b[39;49m")
 		ctx := appengine.NewContext(req)
@@ -60,22 +64,19 @@ func (db *DB) SetMaxOpenConns(n int) {
 	}
 }
 
-//Closes connection if `database/sql`'s native connection pooling is used.
+//Closes connection if `database/sql`'s native connection pooling is used (i.e. with cloudSQL).
 //Otherwise puts the connection back into pool
 func (db *DB) Close() error {
-
 	if db.Conn == nil {
 		return db.DB.Close()
 	}
 
-	//Automatically puts back in connection pool
-	if db.PoolConn != nil {
-		db.PoolConn.Close()
-		db.PoolConn = nil
+	//Put connection back into pool
+	temp := db.PoolConn
+	db.PoolConn = nil //Break Retain Cycle
+	if temp != nil {
+		temp.Close()
 	}
-	// temp := db.PoolConn
-	// db.PoolConn = nil //Break Retain Cycle
-	// temp.Close()
 
 	return nil
 }
