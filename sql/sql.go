@@ -14,6 +14,7 @@ import (
 
 //Temporary place to store connection
 var tempConn *socket.Conn
+var tempRequest *http.Request
 var connLock *sync.Mutex = &sync.Mutex{}
 
 var poolInit sync.Once
@@ -23,9 +24,11 @@ var pool connPool.Pool
 //Presumeably 10 is a good default number for an external database
 var maxOpenConns int = 10
 
-//Register with driver at start of request cycle
-//eg. mysql.RegisterDial("external", sql.Dial(req, 10)), where sql is this package
-func Dial(req *http.Request, setMaxOpenConns ...int) func(addr string) (net.Conn, error) {
+//Register with driver at start of request cycle.
+//It should only be registered once with driver since the driver does not have any concurrency protection.
+//Recommended usage is to use `sync.Once`.
+//eg. mysql.RegisterDial("external", sql.Dial(10)), where sql is this package
+func Dial(setMaxOpenConns ...int) func(addr string) (net.Conn, error) {
 	if len(setMaxOpenConns) != 0 {
 		if setMaxOpenConns[0] <= 0 {
 			panic("setMaxOpenConns > 0 required")
@@ -36,7 +39,7 @@ func Dial(req *http.Request, setMaxOpenConns ...int) func(addr string) (net.Conn
 
 	return func(addr string) (net.Conn, error) {
 		// log.Println("\x1b[36mDial", addr, "\x1b[39;49m")
-		ctx := appengine.NewContext(req)
+		ctx := appengine.NewContext(tempRequest)
 		var err error
 		tempConn, err = socket.Dial(ctx, "tcp", addr)
 		return tempConn, err
@@ -117,8 +120,10 @@ func Open(driverName, dataSourceName string, req ...*http.Request) (*DB, error) 
 
 	factory := func() (net.Conn, error) {
 		connLock.Lock()
+		tempRequest = req[0]
 		defer func() {
 			tempConn = nil
+			tempRequest = nil
 			connLock.Unlock()
 		}()
 
