@@ -15,15 +15,37 @@ import (
 
 type SlowRetrieve func(ctx context.Context) (interface{}, error)
 
-func Remember(ctx context.Context, key string, expiration time.Duration, p SlowRetrieve, disable ...bool) (interface{}, error) {
+//Options:
+//param 1 (bool): disable caching. (Usually for debugging)
+//Param 2 (bool): Obtain fresh copy. Ignore content in cache but store fresh copy in cache.
+//NB: In order for Param 2 to be activated, param 1 must be false.
+func Remember(ctx context.Context, key string, expiration time.Duration, p SlowRetrieve, options ...bool) (interface{}, error) {
+
+	disableCache := false
+	fresh := false
+
+	if len(options) != 0 {
+		disableCache = options[0]
+		if len(options) >= 2 {
+			fresh = options[1]
+		}
+	}
 
 	//For debugging, you can disable cache
-	if len(disable) != 0 && disable[0] == true {
+	if disableCache {
 		return p(ctx)
 	}
 
-	//Check if item exists
 	var v interface{}
+
+	if fresh {
+		if appengine.IsDevAppServer() {
+			log.Println("\x1b[31mGrabbing (fresh) from SlowRetrieve key:", key, "\x1b[39;49m")
+		}
+		goto fresh
+	}
+
+	//Check if item exists
 	if _, err := memcache.Gob.Get(ctx, key, &v); err == nil {
 		//Item exists in cache
 		if appengine.IsDevAppServer() {
@@ -36,6 +58,7 @@ func Remember(ctx context.Context, key string, expiration time.Duration, p SlowR
 		}
 	}
 
+fresh:
 	//Item does not exist in cache so grab it from the persistent store
 	itemToStore, err := p(ctx)
 	func(itemToStore interface{}) {
