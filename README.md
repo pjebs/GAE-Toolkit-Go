@@ -1,3 +1,8 @@
+Included are 2 independent packages.
+
+1) Cache Package - Provides a superior interface to caching data (eg. from a database)
+2) Sql Package - Experimental work to circumvent CloudSQL and use your own MySQL database and SAVE money.
+
 **HOW TO USE CACHE PACKAGE**
 
 Use it to elegantly retrieve something from the cache if it's already there, OR fetch it if it isn't there. If it's not there, the package will elegantly store it in the cache for next time.
