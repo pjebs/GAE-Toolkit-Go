@@ -1,7 +1,7 @@
 Included are 2 independent packages.
 
-1) Cache Package - Provides a superior interface to caching data (eg. from a database)
-2) Sql Package - Experimental work to circumvent CloudSQL and use your own MySQL database and SAVE money.
+1. Cache Package - Provides a superior interface to caching data (eg. from a database)
+2. Sql Package - Experimental work to circumvent CloudSQL and use your own MySQL database and SAVE money.
 
 **HOW TO USE CACHE PACKAGE**
 
