@@ -61,16 +61,16 @@ func Remember(ctx context.Context, key string, expiration time.Duration, p SlowR
 fresh:
 	//Item does not exist in cache so grab it from the persistent store
 	itemToStore, err := p(ctx)
+	if err != nil {
+		return nil, err
+	}
 	func(itemToStore interface{}) {
 		defer func() {
 			recover()
 		}()
 		gob.Register(itemToStore)
 	}(itemToStore)
-	if err != nil {
-		return nil, err
-	}
-
+	
 	//Store item in Cache
 	item := &memcache.Item{
 		Key:        key,
