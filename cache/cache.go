@@ -25,10 +25,7 @@ type CacheOptions struct {
 	Log bool
 }
 
-//Options:
-//param 1 (bool): disable caching. (Usually for debugging)
-//Param 2 (bool): Obtain fresh copy. Ignore content in cache but store fresh copy in cache.
-//NB: In order for Param 2 to be activated, param 1 must be false.
+// Remember is used to retrieve values from the cache, and if it doesn't exist, then retrieve them using p
 func Remember(ctx context.Context, key string, expiration time.Duration, p SlowRetrieve, options ...CacheOptions) (interface{}, error) {
 
 	var (
@@ -102,13 +99,4 @@ fresh:
 		}
 	}
 	return itemToStore, nil
-}
-
-//Delete key from memcache
-func Delete(ctx context.Context, key string) error {
-	return memcache.Delete(ctx, key)
-}
-
-func DeleteMulti(ctx context.Context, keys []string) error {
-	return memcache.DeleteMulti(ctx, keys)
 }
