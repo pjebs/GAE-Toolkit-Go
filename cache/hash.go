@@ -10,8 +10,9 @@ type Key string
 
 // CreateKey will generate a key based on the input arguments.
 // When prefix is true, the caller's name will be used to prefix the key in an attempt to make it unique.
-// The args can also be separated using sep.
-func CreateKey(prefix bool, sep string, args ...interface{}) Key {
+// The args can also be separated using sep. visual does not do anything. It is used at code level to easily
+// see how the key should look
+func CreateKey(prefix bool, sep string, visual string, args ...interface{}) Key {
 	var output string
 
 	if prefix {
